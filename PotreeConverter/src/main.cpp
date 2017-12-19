@@ -34,6 +34,25 @@ using Potree::ConversionQuality;
 
 class SparseGrid;
 
+namespace
+{
+    enum class Units { METERS=0, INTL_FEET, US_SURVEY_FEET };
+    double unitsToMeters(const Units& u)
+    {
+        switch (u)
+        {
+            case Units::METERS:
+                return 1.0;
+            case Units::INTL_FEET:
+                return 0.3048;
+            case Units::US_SURVEY_FEET:
+                return 1200.0/3937.0;
+            default:
+                return 1.0;
+        };
+    }
+}
+
 struct PotreeArguments {
 	bool help = false;
 	StoreOption storeOption = StoreOption::ABORT_IF_EXISTS;
@@ -62,6 +81,7 @@ struct PotreeArguments {
 	bool showSkybox = false;
 	string material = "RGB";
     string executablePath;
+    Units units;
 };
 
 PotreeArguments parseArguments(int argc, char **argv){
@@ -92,6 +112,7 @@ PotreeArguments parseArguments(int argc, char **argv){
 	args.addArgument("edl-enabled", "Enable Eye-Dome-Lighting.");
 	args.addArgument("show-skybox", "");
 	args.addArgument("material", "RGB, ELEVATION, INTENSITY, INTENSITY_GRADIENT, CLASSIFICATION, RETURN_NUMBER, SOURCE, LEVEL_OF_DETAIL");
+    args.addArgument("input-units", "METERS, INTL_FEET, US_SURVEY_FEET");
 
 	PotreeArguments a;
 
@@ -233,6 +254,28 @@ PotreeArguments parseArguments(int argc, char **argv){
 
     auto absolutePath = fs::canonical(fs::system_complete(argv[0]));
     a.executablePath = absolutePath.parent_path().string();
+    
+    a.units = Units::METERS;
+    if (args.has("input-units"))
+    {
+        auto unitStr = args.get("input-units").as<string>();
+        if (unitStr =="INTL_FEET")
+        {
+            a.units = Units::INTL_FEET;
+        }
+        else if (unitStr == "US_SURVEY_FEET")
+        {
+            a.units = Units::US_SURVEY_FEET;
+        }
+        else if (unitStr == "METERS")
+        {
+            a.units = Units::METERS;
+        }
+        else
+        {
+            std::cerr << "Invalid unit string |" << unitStr << "|, defaulting to METERS.\n";
+        }
+    }
 
 	return a;
 }
@@ -273,7 +316,7 @@ int main(int argc, char **argv){
 		PotreeArguments a = parseArguments(argc, argv);
 		printArguments(a);
 
-        PotreeConverter pc(a.executablePath, a.outdir, a.source);
+        PotreeConverter pc(a.executablePath, a.outdir, a.source, unitsToMeters(a.units));
 
 		pc.spacing = a.spacing;
 		pc.diagonalFraction = a.diagonalFraction;

@@ -75,7 +75,8 @@ PointReader *PotreeConverter::createPointReader(string path, PointAttributes poi
 	return reader;
 }
 
-PotreeConverter::PotreeConverter(string executablePath, string workDir, vector<string> sources){
+    
+PotreeConverter::PotreeConverter(string executablePath, string workDir, vector<string> sources, double unitsToMeters) : userUnitsToMeters(unitsToMeters) {
     this->executablePath = executablePath;
 	this->workDir = workDir;
 	this->sources = sources;
@@ -136,6 +137,13 @@ AABB PotreeConverter::calculateAABB(){
 			PointReader *reader = createPointReader(source, pointAttributes);
 			
 			AABB lAABB = reader->getAABB();
+            lAABB.min.x *= userUnitsToMeters;
+            lAABB.min.y *= userUnitsToMeters;
+            lAABB.min.z *= userUnitsToMeters;
+            lAABB.max.x *= userUnitsToMeters;
+            lAABB.max.y *= userUnitsToMeters;
+            lAABB.max.z *= userUnitsToMeters;
+            
 			aabb.update(lAABB.min);
 			aabb.update(lAABB.max);
 
@@ -409,6 +417,9 @@ void PotreeConverter::convert(){
 			pointsProcessed++;
 
 			Point p = reader->getPoint();
+            p.position.x *= userUnitsToMeters;
+            p.position.y *= userUnitsToMeters;
+            p.position.z *= userUnitsToMeters;
 			writer->add(p);
 
 			if((pointsProcessed % (1'000'000)) == 0){

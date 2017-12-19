@@ -55,8 +55,10 @@ public:
 	bool showSkybox = false;
 	string material = "RGB";
     string executablePath;
+    
+    double userUnitsToMeters;
 
-    PotreeConverter(string executablePath, string workDir, vector<string> sources);
+    PotreeConverter(string executablePath, string workDir, vector<string> sources, double userUnitsToMeters=1.0);
 		
 	void convert();
 
