@@ -10,6 +10,11 @@ Potree.version = {
 	suffix: "RC"
 };
 
+// Add tracking for concurrent loading to eliminate
+// resource exhaustion and browser crashes in very large datasets.
+Potree.numNodesLoading = 0;
+Potree.maxConcurrentNodesLoading = 16;
+
 console.log("Potree " + Potree.version.major + "." + Potree.version.minor + Potree.version.suffix);
 
 Potree.pointBudget = 1*1000*1000;
@@ -2823,7 +2828,7 @@ Potree.BinaryLoader.prototype.parse = function(node, buffer){
 		node.tightBoundingBox = tightBoundingBox;
 		node.loaded = true;
 		node.loading = false;
-		node.pcoGeometry.numNodesLoading--;
+		Potree.numNodesLoading--;
 	};
 
 	let message = {
@@ -2971,7 +2976,7 @@ Potree.GreyhoundBinaryLoader.prototype.parse = function(node, buffer){
 		node.tightBoundingBox = tightBoundingBox;
 		node.loaded = true;
 		node.loading = false;
-		--node.pcoGeometry.numNodesLoading;
+		--Potree.numNodesLoading;
 	};
 
     var bb = node.boundingBox;
@@ -3566,7 +3571,7 @@ Potree.LasLazBatcher = class LasLazBatcher{
 			this.node.geometry = geometry;
 			this.node.loaded = true;
 			this.node.loading = false;
-			this.node.pcoGeometry.numNodesLoading--;
+			Potree.numNodesLoading--;
 			this.node.mean = new THREE.Vector3(...e.data.mean);
 			
 			Potree.workerPool.returnWorker(workerPath, worker);
@@ -8746,7 +8751,6 @@ Potree.PointCloudOctreeGeometry = function(){
 	this.spacing = 0;
 	this.boundingBox = null;
 	this.root = null;
-	this.numNodesLoading = 0;
 	this.nodes = null;
 	this.pointAttributes = null;
 	this.hierarchyStepSize = -1;
@@ -8850,13 +8854,13 @@ Potree.PointCloudOctreeGeometryNode.prototype.addChild = function(child){
 };
 
 Potree.PointCloudOctreeGeometryNode.prototype.load = function(){
-	if(this.loading === true || this.loaded === true ||this.pcoGeometry.numNodesLoading > 3){
+	if(this.loading === true || this.loaded === true || Potree.numNodesLoading >= Potree.maxConcurrentNodesLoading){
 		return;
 	}
 	
 	this.loading = true;
 	
-	this.pcoGeometry.numNodesLoading++;
+	Potree.numNodesLoading++;
 	
 	
 	if(this.pcoGeometry.loader.version.equalOrHigher("1.5")){
@@ -9005,7 +9009,6 @@ Potree.PointCloudGreyhoundGeometry = function(){
 	this.spacing = 0;
 	this.boundingBox = null;
 	this.root = null;
-	this.numNodesLoading = 0;
 	this.nodes = null;
 	this.pointAttributes = {};
 	this.hierarchyStepSize = -1;
@@ -9148,12 +9151,12 @@ Potree.PointCloudGreyhoundGeometryNode.prototype.load = function(){
 	if (
             this.loading === true ||
             this.loaded === true ||
-            this.pcoGeometry.numNodesLoading > 3) {
+            Potree.numNodesLoading >= Potree.maxConcurrentNodesLoading) {
 		return;
 	}
 
 	this.loading = true;
-	this.pcoGeometry.numNodesLoading++;
+	Potree.numNodesLoading++;
 
 	if (
             this.level % this.pcoGeometry.hierarchyStepSize === 0 &&
