@@ -14141,6 +14141,15 @@ Potree.Scene = class extends THREE.EventDispatcher{
 		});
 	};
 	
+	clearPointClouds()
+	{		
+		for (var ip = 0; ip != this.pointclouds.length; ++ip)
+		{
+			this.scenePointCloud.remove(this.pointclouds[ip]);
+		}
+		this.pointclouds = [];
+	};
+	
 	addVolume(volume){
 		this.volumes.push(volume);
 		this.dispatchEvent({
