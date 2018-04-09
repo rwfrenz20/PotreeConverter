@@ -8512,14 +8512,14 @@ Potree.PointCloudOctree = class extends Potree.PointCloudTree{
 		renderer.setRenderTarget( pickState.renderTarget );
 		
 		let pixelPos = new THREE.Vector3()
-			.addVectors(camera.position, ray.direction)
+			.addVectors(ray.origin, ray.direction)
 			.project(camera)
 			.addScalar(1)
 			.multiplyScalar(0.5);
 		pixelPos.x *= width;
 		pixelPos.y *= height;
 		
-		renderer.setScissor(
+		renderer.setScissor(	
 			parseInt(pixelPos.x - (pickWindowSize - 1) / 2), 
 			parseInt(pixelPos.y - (pickWindowSize - 1) / 2),
 			parseInt(pickWindowSize), parseInt(pickWindowSize));
